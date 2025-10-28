@@ -1,0 +1,46 @@
+version: "3.8"
+services:
+  pc1:
+    image: python:3.11-slim
+    command: bash -c "python -m http.server 80"
+    networks:
+      testnet:
+        ipv4_address: 172.30.0.10
+        mac_address: "02:42:ac:11:00:0a"
+
+  webserver:
+    image: nginx:alpine
+    networks:
+      testnet:
+        ipv4_address: 172.30.0.11
+        mac_address: "02:42:ac:11:00:0b"
+
+  printer:
+    image: python:3.11-slim
+    # simple TCP printer simulator on port 9100 that logs incoming data
+    command: >
+      bash -c "while true; do nc -l -p 9100 -k -v 2>&1 | sed 's/^/[PRINTER] /' ; done"
+    networks:
+      testnet:
+        ipv4_address: 172.30.0.12
+        mac_address: "02:42:ac:11:00:14"
+
+  scanner:
+    image: ubuntu:22.04
+    container_name: scanner
+    tty: true
+    stdin_open: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      testnet:
+        ipv4_address: 172.30.0.20
+    command: bash -c "apt-get update -y && apt-get install -y --no-install-recommends nmap netcat-openbsd iputils-ping arp-scan dnsutils curl tcpdump && bash"
+
+networks:
+  testnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
